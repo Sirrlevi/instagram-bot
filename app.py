@@ -1,4 +1,3 @@
-
 from flask import Flask, request, jsonify, render_template
 from werkzeug.utils import secure_filename
 import json
@@ -15,7 +14,6 @@ app.config['UPLOAD_EXTENSIONS'] = ['.json', '.jsonl']
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Try MongoDB
 try:
     from pymongo import MongoClient
     MONGO_URI = os.environ.get('MONGO_URI')
@@ -61,14 +59,13 @@ class AdvancedReplyBot:
         self.exception_list = []
         self.load_training_data()
         self.load_exception_list()
-
         self.media_responses = {
-            'reel': ["nice reel bsdk ðŸ’€", "cringe reel stfu â˜ ï¸"],
-            'video': ["video dekh li â˜ ï¸"],
-            'audio': ["song suna ðŸ¥€"],
-            'image': ["pic dekh li ðŸ’€"],
+            'reel': ["nice reel bsdk 💀", "cringe reel stfu ☠️"],
+            'video': ["video dekh li ☠️"],
+            'audio': ["song suna 🥀"],
+            'image': ["pic dekh li 💀"],
         }
-
+    
     def load_training_data(self):
         try:
             if MONGO_ENABLED:
@@ -78,7 +75,7 @@ class AdvancedReplyBot:
             logger.info(f"Loaded {len(self.training_data)} examples")
         except Exception as e:
             logger.error(f"Load error: {e}")
-
+    
     def load_exception_list(self):
         try:
             if MONGO_ENABLED:
@@ -88,61 +85,56 @@ class AdvancedReplyBot:
             logger.info(f"Loaded {len(self.exception_list)} exceptions")
         except Exception as e:
             logger.error(f"Load exceptions error: {e}")
-
+    
     def is_user_excepted(self, username):
         if not username:
             return False
         return username.lower().strip().replace('@', '') in self.exception_list
-
+    
     def clean_text(self, text):
-        return re.sub(r'\s+', ' ', text.lower().strip())
-
+        return re.sub(r's+', ' ', text.lower().strip())
+    
     def extract_keywords(self, text):
         stop_words = {'a', 'an', 'the', 'is', 'are', 'was', 'were'}
-        return [w for w in re.findall(r'\b\w+\b', text.lower()) if w not in stop_words and len(w) > 2]
-
+        return [w for w in re.findall(r'\bw+\b', text.lower()) if w not in stop_words and len(w) > 2]
+    
     def fuzzy_similarity(self, a, b):
         return SequenceMatcher(None, a.lower(), b.lower()).ratio()
-
+    
     def word_overlap_score(self, msg_keywords, instruction_keywords):
         if not msg_keywords or not instruction_keywords:
             return 0
         intersection = len(set(msg_keywords) & set(instruction_keywords))
         union = len(set(msg_keywords) | set(instruction_keywords))
         return intersection / union if union > 0 else 0
-
+    
     def find_best_matches(self, incoming_message, top_n=3):
         incoming_clean = self.clean_text(incoming_message)
         incoming_keywords = self.extract_keywords(incoming_clean)
         scores = []
-
         for item in self.training_data:
             instruction = item.get('instruction', '')
             instruction_clean = self.clean_text(instruction)
             instruction_keywords = self.extract_keywords(instruction_clean)
-
             fuzzy = self.fuzzy_similarity(incoming_clean, instruction_clean)
             keyword = self.word_overlap_score(incoming_keywords, instruction_keywords)
             substring = 0.3 if instruction_clean in incoming_clean else 0
-
             score = fuzzy * 0.4 + keyword * 0.5 + substring
             scores.append({'instruction': instruction, 'response': item.get('response', ''), 'score': score})
-
         return sorted(scores, key=lambda x: x['score'], reverse=True)[:top_n]
-
+    
     def get_response(self, message, username=None, is_group=False, media_type=None):
         if media_type:
-            response = random.choice(self.media_responses.get(media_type, ["dekh lia ðŸ’€"]))
+            response = random.choice(self.media_responses.get(media_type, ["dekh lia 💀"]))
         elif not message.strip():
-            response = "stfu empty msg ðŸ’€"
+            response = "stfu empty msg 💀"
         else:
             matches = self.find_best_matches(message, 3)
-            response = matches[0]['response'] if (matches and matches[0]['score'] > 0.3) else random.choice(["sybau wtf u want ðŸ¥€", "stfu ngga â˜ ï¸"])
-
+            response = matches[0]['response'] if (matches and matches[0]['score'] > 0.3) else random.choice(["sybau wtf u want 🥀", "stfu ngga ☠️"])
         if is_group and username:
             response = f"@{username.strip().replace('@', '')} {response}"
         return response
-
+    
     def add_single_data(self, instruction, response):
         try:
             if MONGO_ENABLED:
@@ -155,12 +147,11 @@ class AdvancedReplyBot:
             return True
         except:
             return False
-
+    
     def process_uploaded_file(self, file_content):
         added_count, error_count = 0, 0
         try:
-            lines = file_content.decode('utf-8').split('
-')
+            lines = file_content.decode('utf-8').split('')
             for line in lines:
                 if not line.strip():
                     continue
@@ -183,13 +174,12 @@ class AdvancedReplyBot:
             return {'success': True, 'added': added_count, 'errors': error_count, 'total': len(self.training_data)}
         except Exception as e:
             return {'success': False, 'error': str(e)}
-
+    
     def add_exception(self, username):
         try:
             username_clean = username.lower().strip().replace('@', '')
             if not username_clean:
                 return False, "Empty username"
-
             if MONGO_ENABLED:
                 if not exception_collection.find_one({'username': username_clean}):
                     exception_collection.insert_one({'username': username_clean})
@@ -202,12 +192,11 @@ class AdvancedReplyBot:
                     save_local_exceptions(exceptions)
                 else:
                     return False, "Already exists"
-
             self.load_exception_list()
             return True, f"@{username_clean} added"
         except:
             return False, "Error"
-
+    
     def remove_exception(self, username):
         try:
             username_clean = username.lower().strip().replace('@', '')
@@ -226,7 +215,7 @@ class AdvancedReplyBot:
                 return False, "Not found"
         except:
             return False, "Error"
-
+    
     def get_all_exceptions(self):
         if MONGO_ENABLED:
             return [item['username'] for item in exception_collection.find()]
@@ -304,7 +293,6 @@ def stats():
         else:
             total = len(load_local_training())
             exceptions = len(load_local_exceptions())
-
         return jsonify({'total_examples': total, 'exceptions': exceptions, 'status': 'active'})
     except:
         return jsonify({'total_examples': 0, 'exceptions': 0, 'status': 'error'})
