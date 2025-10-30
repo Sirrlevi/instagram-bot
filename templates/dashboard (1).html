@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 VETO Bot - Advanced Instagram Auto-Reply System</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 50%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        
+        .navbar {
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 3px solid #00ff88;
+            padding: 15px 30px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .navbar h1 { font-size: 1.8em; color: #00ff88; }
+        .nav-links { display: flex; gap: 20px; }
+        .nav-links a { color: #fff; text-decoration: none; cursor: pointer; padding: 10px 15px; border-radius: 5px; transition: all 0.3s; }
+        .nav-links a:hover { background: #00ff88; color: #000; font-weight: bold; }
+        
+        .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+        
+        header {
+            text-align: center;
+            padding: 50px 20px;
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(0, 255, 136, 0.05));
+            border-radius: 20px;
+            margin-bottom: 40px;
+            border: 2px solid rgba(0, 255, 136, 0.3);
+        }
+        
+        header h1 { font-size: 3em; color: #00ff88; text-shadow: 0 0 20px rgba(0, 255, 136, 0.5); margin-bottom: 10px; }
+        header p { font-size: 1.3em; opacity: 0.8; }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.15), rgba(0, 255, 136, 0.05));
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid #00ff88;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.1);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 30px rgba(0, 255, 136, 0.3);
+            border-color: #00ffaa;
+        }
+        
+        .stat-card h3 { color: #00ff88; margin-bottom: 15px; font-size: 1.2em; }
+        .stat-card .number { font-size: 2.5em; font-weight: bold; color: #00ffaa; }
+        .stat-card .label { opacity: 0.7; font-size: 0.9em; margin-top: 5px; }
+        
+        .section {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 40px;
+            border-radius: 20px;
+            margin-bottom: 40px;
+            border: 2px solid rgba(0, 255, 136, 0.2);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        h2 { color: #00ff88; margin-bottom: 25px; font-size: 2em; display: flex; align-items: center; gap: 10px; }
+        h2::before { content: "▶"; font-size: 0.8em; }
+        
+        .section-desc { opacity: 0.8; margin-bottom: 20px; font-size: 1.05em; }
+        
+        .upload-area {
+            border: 4px dashed #00ff88;
+            border-radius: 15px;
+            padding: 60px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(0, 255, 136, 0.05);
+            position: relative;
+        }
+        
+        .upload-area:hover {
+            background: rgba(0, 255, 136, 0.15);
+            border-color: #00ffaa;
+            transform: scale(1.02);
+        }
+        
+        .upload-area.drag-over {
+            background: rgba(0, 255, 136, 0.25);
+            border-color: #fff;
+            transform: scale(1.05);
+        }
+        
+        .upload-area .icon { font-size: 5em; margin-bottom: 15px; }
+        .upload-area h3 { color: #00ff88; margin: 15px 0; }
+        
+        .file-list {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid rgba(0, 255, 136, 0.2);
+        }
+        
+        .file-item {
+            background: rgba(0, 255, 136, 0.1);
+            padding: 15px;
+            margin: 8px 0;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #00ff88;
+        }
+        
+        .file-item.error { border-left-color: #ff4444; background: rgba(255, 68, 68, 0.1); }
+        .file-item.success { border-left-color: #00ff88; background: rgba(0, 255, 136, 0.1); }
+        
+        .file-name { font-weight: 600; color: #00ff88; flex: 1; }
+        .file-status { opacity: 0.8; font-size: 0.9em; margin: 0 15px; }
+        .file-remove { cursor: pointer; color: #ff4444; font-weight: bold; }
+        
+        .input-group {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        
+        .input-group.full { flex-wrap: wrap; }
+        .input-group.full .input-wrapper { flex: 1; min-width: 250px; }
+        
+        .input-wrapper {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .input-wrapper label {
+            display: block;
+            margin-bottom: 8px;
+            color: #00ff88;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+        
+        input[type="text"],
+        input[type="file"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(0, 255, 136, 0.4);
+            color: #fff;
+            border-radius: 10px;
+            font-size: 15px;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+        
+        input[type="text"]::placeholder,
+        textarea::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+        
+        input[type="text"]:focus,
+        textarea:focus,
+        input[type="file"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #00ffaa;
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #00ff88, #00ffaa);
+            color: #000;
+            padding: 14px 35px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 255, 136, 0.5);
+            background: linear-gradient(135deg, #00ffaa, #00ff88);
+        }
+        
+        button:active {
+            transform: translateY(-1px);
+        }
+        
+        button.danger {
+            background: linear-gradient(135deg, #ff4444, #ff6666);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(255, 68, 68, 0.3);
+        }
+        
+        button.danger:hover {
+            background: linear-gradient(135deg, #ff6666, #ff4444);
+            box-shadow: 0 8px 25px rgba(255, 68, 68, 0.5);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .message {
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            animation: slideIn 0.4s ease-out;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-left: 5px solid;
+        }
+        
+        .message.success {
+            background: rgba(0, 255, 136, 0.15);
+            border-color: #00ff88;
+            color: #00ff88;
+        }
+        
+        .message.error {
+            background: rgba(255, 68, 68, 0.15);
+            border-color: #ff4444;
+            color: #ff6666;
+        }
+        
+        .message.info {
+            background: rgba(0, 150, 255, 0.15);
+            border-color: #0096ff;
+            color: #0096ff;
+        }
+        
+        .message-icon { font-size: 1.5em; }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .test-result {
+            background: rgba(0, 255, 136, 0.1);
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 25px;
+            border-left: 5px solid #00ff88;
+            border: 2px solid rgba(0, 255, 136, 0.3);
+        }
+        
+        .test-result h4 { color: #00ff88; margin: 15px 0 10px 0; font-size: 1.1em; }
+        .test-result p { opacity: 0.9; line-height: 1.6; }
+        
+        #fileInput { display: none; }
+        
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #00ff88;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 30px auto;
+            display: none;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .exception-list {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+            margin-top: 20px;
+            border: 1px solid rgba(0, 255, 136, 0.2);
+        }
+        
+        .exception-item {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 18px 20px;
+            border-radius: 12px;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+            border-left: 4px solid #00ff88;
+        }
+        
+        .exception-item:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateX(5px);
+            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.2);
+        }
+        
+        .exception-item .username {
+            color: #00ff88;
+            font-weight: bold;
+            font-size: 1.1em;
+            letter-spacing: 0.5px;
+        }
+        
+        .exception-item button {
+            padding: 10px 20px;
+            font-size: 14px;
+            background: #ff4444;
+            color: #fff;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 50px 20px;
+            opacity: 0.5;
+            font-size: 1.1em;
+        }
+        
+        .empty-state-icon { font-size: 3em; margin-bottom: 10px; }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(0, 255, 136, 0.2);
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            accent-color: #00ff88;
+        }
+        
+        .checkbox-group label {
+            color: #fff;
+            cursor: pointer;
+            font-size: 1.05em;
+            margin: 0;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            border-bottom: 2px solid rgba(0, 255, 136, 0.2);
+            padding-bottom: 15px;
+        }
+        
+        .tab-btn {
+            padding: 12px 25px;
+            border: 2px solid rgba(0, 255, 136, 0.3);
+            border-bottom: none;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            cursor: pointer;
+            border-radius: 10px 10px 0 0;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .tab-btn.active {
+            background: #00ff88;
+            color: #000;
+            border-color: #00ff88;
+        }
+        
+        .tab-btn:hover {
+            border-color: #00ff88;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row { grid-template-columns: 1fr; }
+            .navbar { flex-direction: column; gap: 15px; }
+            header h1 { font-size: 2em; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .section { padding: 25px; }
+            .upload-area { padding: 40px; }
+        }
+        
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 255, 136, 0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #00ff88; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00ffaa; }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>🤖 VETO BOT</h1>
+        <div class="nav-links">
+            <a onclick="scrollToSection('stats')">📊 Stats</a>
+            <a onclick="scrollToSection('upload')">📤 Upload</a>
+            <a onclick="scrollToSection('exceptions')">🚫 Exceptions</a>
+            <a onclick="scrollToSection('test')">🧪 Test</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>🤖 VETO Instagram Bot Dashboard</h1>
+            <p>Advanced Auto-Reply System with Exception Management & Media Support</p>
+        </header>
+
+        <div id="stats" class="stats-grid">
+            <div class="stat-card">
+                <h3>📊 Training Data</h3>
+                <div class="number" id="totalExamples">0</div>
+                <div class="label">Examples Loaded</div>
+            </div>
+            <div class="stat-card">
+                <h3>📁 Files Uploaded</h3>
+                <div class="number" id="filesUploaded">0</div>
+                <div class="label">JSONL Files</div>
+            </div>
+            <div class="stat-card">
+                <h3>🚫 Exceptions</h3>
+                <div class="number" id="exceptionsCount">0</div>
+                <div class="label">Ignored Users</div>
+            </div>
+            <div class="stat-card">
+                <h3>✉️ Messages</h3>
+                <div class="number" id="messagesProcessed">0</div>
+                <div class="label">Processed</div>
+            </div>
+            <div class="stat-card">
+                <h3>✅ Status</h3>
+                <div class="number" id="status" style="font-size: 1.8em;">ACTIVE</div>
+                <div class="label">System Status</div>
+            </div>
+        </div>
+
+        <div id="upload" class="section">
+            <h2>📤 Upload Training Data - Multiple Files</h2>
+            <p class="section-desc">Upload multiple JSONL files at once! Select files then click "Upload Selected"</p>
+            
+            <div class="upload-area" id="uploadArea">
+                <div class="icon">📁</div>
+                <h3>Drag & Drop JSONL Files Here</h3>
+                <p style="margin: 15px 0; opacity: 0.8;">or click to browse and select multiple files</p>
+                <button onclick="document.getElementById('fileInput').click()">➕ Select Multiple Files</button>
+                <input type="file" id="fileInput" accept=".json,.jsonl" multiple />
+            </div>
+            
+            <div id="fileList" class="file-list" style="display: none;">
+                <h4 style="color: #00ff88; margin-bottom: 15px;">📋 Selected Files:</h4>
+                <div id="fileListContent"></div>
+                <div style="margin-top: 15px; display: flex; gap: 10px;">
+                    <button onclick="uploadAllFiles()" style="flex: 1;">⬆️ Upload All Selected</button>
+                    <button onclick="clearFileList()" class="danger" style="flex: 1;">🗑️ Clear List</button>
+                </div>
+            </div>
+            
+            <div class="loader" id="uploadLoader"></div>
+            <div id="uploadMessage"></div>
+        </div>
+
+        <div id="exceptions" class="section">
+            <h2>🚫 Exception List Management</h2>
+            <p class="section-desc">Add Instagram usernames to ignore - bot won't reply to these users</p>
+            
+            <div class="input-group full">
+                <div class="input-wrapper">
+                    <label>👤 Instagram Username:</label>
+                    <input type="text" id="exceptionUsername" placeholder="Enter username (with or without @)">
+                </div>
+                <button onclick="addException()" style="margin-top: 25px;">➕ Add Exception</button>
+            </div>
+            
+            <div id="exceptionMessage"></div>
+            
+            <h3 style="color: #00ff88; margin-top: 30px; margin-bottom: 15px;">📋 Current Exception List:</h3>
+            <div class="exception-list" id="exceptionList">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📭</div>
+                    <p>No exceptions added yet. All users will receive replies.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>✍️ Training Examples</h2>
+            <p class="section-desc">Add individual instruction-response pairs to train your bot</p>
+            
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('tab-add')">➕ Add Single</button>
+                <button class="tab-btn" onclick="switchTab('tab-media')">📹 Media Types</button>
+            </div>
+            
+            <div id="tab-add" class="tab-content active">
+                <form id="addDataForm">
+                    <div class="input-wrapper">
+                        <label>💬 Incoming Message:</label>
+                        <input type="text" id="instruction" placeholder="e.g., hey cutie what's up" required>
+                    </div>
+                    
+                    <div class="input-wrapper">
+                        <label>🤖 Bot Reply:</label>
+                        <textarea id="response" placeholder="e.g., sybau stfu ngga 💀" required></textarea>
+                    </div>
+                    
+                    <button type="submit">✅ Add Training Example</button>
+                </form>
+                <div id="addMessage"></div>
+            </div>
+            
+            <div id="tab-media" class="tab-content">
+                <p style="margin-bottom: 20px; opacity: 0.8;">Bot automatically detects and responds to:</p>
+                <ul style="margin-left: 20px; line-height: 2;">
+                    <li>📹 Reels & Videos</li>
+                    <li>🎬 Stories & Stickers</li>
+                    <li>🎞️ GIFs & Animations</li>
+                    <li>🖼️ Images & Photos</li>
+                    <li>🎵 Songs & Audio Messages</li>
+                    <li>🎤 Voice Notes</li>
+                    <li>☎️ Calls & Video Calls</li>
+                    <li>✂️ Cutout Stickers</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="test" class="section">
+            <h2>🧪 Test Bot Response</h2>
+            <p class="section-desc">Test your bot before going live</p>
+            
+            <div class="form-row">
+                <div class="input-wrapper">
+                    <label>💬 Test Message:</label>
+                    <input type="text" id="testMessage" placeholder="Enter a message to test">
+                </div>
+                <div class="input-wrapper">
+                    <label>👤 Username (Optional):</label>
+                    <input type="text" id="testUsername" placeholder="For group chat simulation">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="input-wrapper">
+                    <label>📎 Media Type (Optional):</label>
+                    <select id="testMediaType">
+                        <option value="">-- None --</option>
+                        <option value="reel">Reel</option>
+                        <option value="sticker">Sticker</option>
+                        <option value="gif">GIF</option>
+                        <option value="image">Image</option>
+                        <option value="video">Video</option>
+                        <option value="audio">Audio</option>
+                        <option value="voice">Voice</option>
+                        <option value="call">Call</option>
+                        <option value="video_call">Video Call</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="testIsGroup">
+                <label for="testIsGroup">✓ Simulate Group Chat (adds @username to reply)</label>
+            </div>
+            
+            <button onclick="testBot()">🚀 Test Bot Now</button>
+            
+            <div id="testResult"></div>
+        </div>
+
+        <footer style="text-align: center; padding: 40px; opacity: 0.6; margin-top: 50px; border-top: 1px solid rgba(0, 255, 136, 0.2);">
+            <p>VETO Bot v2.0 | Advanced Instagram Auto-Reply System | 2025</p>
+            <p>Powered by Flask + MongoDB + PyMongo</p>
+        </footer>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin;
+        let selectedFiles = [];
+        
+        // Initialize
+        loadStats();
+        loadExceptions();
+        setInterval(loadStats, 30000);
+        setInterval(loadExceptions, 60000);
+
+        // File Upload - Multiple Files
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+        uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            if (e.dataTransfer.files.length > 0) handleFileSelection(e.dataTransfer.files);
+        });
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) handleFileSelection(e.target.files);
+        });
+
+        function handleFileSelection(files) {
+            selectedFiles = Array.from(files);
+            displaySelectedFiles();
+        }
+
+        function displaySelectedFiles() {
+            const fileListDiv = document.getElementById('fileList');
+            const fileListContent = document.getElementById('fileListContent');
+            
+            if (selectedFiles.length === 0) {
+                fileListDiv.style.display = 'none';
+                return;
+            }
+            
+            fileListDiv.style.display = 'block';
+            fileListContent.innerHTML = selectedFiles.map((file, idx) => `
+                <div class="file-item success">
+                    <span class="file-name">📄 ${file.name}</span>
+                    <span class="file-status">${(file.size / 1024).toFixed(2)} KB</span>
+                    <span class="file-remove" onclick="removeFile(${idx})">✖</span>
+                </div>
+            `).join('');
+        }
+
+        function removeFile(idx) {
+            selectedFiles.splice(idx, 1);
+            displaySelectedFiles();
+        }
+
+        function clearFileList() {
+            selectedFiles = [];
+            document.getElementById('fileList').style.display = 'none';
+            fileInput.value = '';
+        }
+
+        async function uploadAllFiles() {
+            if (selectedFiles.length === 0) {
+                document.getElementById('uploadMessage').innerHTML = `
+                    <div class="message error">
+                        <span class="message-icon">⚠️</span>
+                        <div>No files selected!</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            document.getElementById('uploadLoader').style.display = 'block';
+            document.getElementById('uploadMessage').innerHTML = '';
+            
+            let totalAdded = 0;
+            let totalErrors = 0;
+            let successCount = 0;
+            
+            for (let file of selectedFiles) {
+                try {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    
+                    const res = await fetch(`${API_URL}/upload`, { method: 'POST', body: formData });
+                    const data = await res.json();
+                    
+                    if (data.success) {
+                        totalAdded += data.stats.added;
+                        totalErrors += data.stats.errors;
+                        successCount++;
+                        
+                        document.getElementById('fileListContent').innerHTML = document.getElementById('fileListContent').innerHTML.replace(
+                            `${file.name}</span>`,
+                            `${file.name}</span> <span style="color: #00ff88; font-weight: bold;">✓ Uploaded</span>`
+                        );
+                    } else {
+                        console.error(`Error uploading ${file.name}:`, data.error);
+                    }
+                } catch (error) {
+                    console.error(`Error uploading ${file.name}:`, error);
+                }
+            }
+            
+            document.getElementById('uploadLoader').style.display = 'none';
+            
+            document.getElementById('uploadMessage').innerHTML = `
+                <div class="message success">
+                    <span class="message-icon">✅</span>
+                    <div>
+                        <strong>All files processed!</strong><br>
+                        Successful: ${successCount}/${selectedFiles.length} | Total Added: ${totalAdded} | Errors: ${totalErrors}
+                    </div>
+                </div>
+            `;
+            
+            clearFileList();
+            loadStats();
+        }
+
+        async function addException() {
+            const username = document.getElementById('exceptionUsername').value.trim();
+            if (!username) {
+                document.getElementById('exceptionMessage').innerHTML = `
+                    <div class="message error">
+                        <span class="message-icon">⚠️</span>
+                        <div>Please enter a username</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_URL}/exception/add`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    document.getElementById('exceptionMessage').innerHTML = `
+                        <div class="message success">
+                            <span class="message-icon">✅</span>
+                            <div>${data.message}</div>
+                        </div>
+                    `;
+                    document.getElementById('exceptionUsername').value = '';
+                    loadExceptions();
+                    loadStats();
+                } else {
+                    document.getElementById('exceptionMessage').innerHTML = `
+                        <div class="message error">
+                            <span class="message-icon">❌</span>
+                            <div>${data.error || data.message}</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('exceptionMessage').innerHTML = `
+                    <div class="message error">
+                        <span class="message-icon">❌</span>
+                        <div>Error: ${error.message}</div>
+                    </div>
+                `;
+            }
+        }
+
+        async function removeException(username) {
+            if (!confirm(`Remove @${username} from exception list?`)) return;
+            
+            try {
+                const res = await fetch(`${API_URL}/exception/remove`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    loadExceptions();
+                    loadStats();
+                } else {
+                    alert('Error: ' + (data.error || data.message));
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function loadExceptions() {
+            try {
+                const res = await fetch(`${API_URL}/exception/list`);
+                const data = await res.json();
+                const listDiv = document.getElementById('exceptionList');
+                
+                if (data.exceptions && data.exceptions.length > 0) {
+                    listDiv.innerHTML = data.exceptions.map(username => `
+                        <div class="exception-item">
+                            <span class="username">@${username}</span>
+                            <button class="danger" onclick="removeException('${username}')">✖ Remove</button>
+                        </div>
+                    `).join('');
+                } else {
+                    listDiv.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <p>No exceptions added yet. All users will receive replies.</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Failed to load exceptions:', error);
+            }
+        }
+
+        document.getElementById('addDataForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const instruction = document.getElementById('instruction').value;
+            const response = document.getElementById('response').value;
+            
+            try {
+                const res = await fetch(`${API_URL}/add_data`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ instruction, response })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    document.getElementById('addMessage').innerHTML = `
+                        <div class="message success">
+                            <span class="message-icon">✅</span>
+                            <div>${data.message} (Total: ${data.total})</div>
+                        </div>
+                    `;
+                    document.getElementById('addDataForm').reset();
+                    loadStats();
+                } else {
+                    document.getElementById('addMessage').innerHTML = `
+                        <div class="message error">
+                            <span class="message-icon">❌</span>
+                            <div>${data.error}</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('addMessage').innerHTML = `
+                    <div class="message error">
+                        <span class="message-icon">❌</span>
+                        <div>Error: ${error.message}</div>
+                    </div>
+                `;
+            }
+        });
+
+        async function testBot() {
+            const message = document.getElementById('testMessage').value;
+            const username = document.getElementById('testUsername').value;
+            const isGroup = document.getElementById('testIsGroup').checked;
+            const mediaType = document.getElementById('testMediaType').value || null;
+            
+            if (!message && !mediaType) {
+                document.getElementById('testResult').innerHTML = `
+                    <div class="message error">
+                        <span class="message-icon">⚠️</span>
+                        <div>Please enter a message or select a media type</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_URL}/test`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message, username, is_group: isGroup, media_type: mediaType })
+                });
+                const data = await res.json();
+                
+                let resultHtml = `<div class="test-result">`;
+                if (message) resultHtml += `<h4>💬 Message:</h4><p><strong>"${data.message}"</strong></p>`;
+                if (mediaType) resultHtml += `<h4>📎 Media Type:</h4><p><strong>${mediaType.toUpperCase()}</strong></p>`;
+                if (username) resultHtml += `<h4>👤 Username:</h4><p><strong>@${username}</strong></p>`;
+                if (isGroup) resultHtml += `<h4>📱 Type:</h4><p><strong>Group Chat</strong></p>`;
+                
+                resultHtml += `<h4 style="color: #00ffaa; margin-top: 20px;">🤖 Bot Reply:</h4><p style="font-size: 1.3em; font-weight: bold; color: #00ffaa;">"${data.response}"</p>`;
+                
+                if (data.excepted) resultHtml += `<p style="color: #ff6666; margin-top: 15px; font-weight: bold;">⚠️ This user is in exception list - bot will NOT reply</p>`;
+                
+                resultHtml += `</div>`;
+                document.getElementById('testResult').innerHTML = resultHtml;
+            } catch (error) {
+                document.getElementById('testResult').innerHTML = `
+                    <div class="message error">
+                        <span class="message-icon">❌</span>
+                        <div>Test failed: ${error.message}</div>
+                    </div>
+                `;
+            }
+        }
+
+        async function loadStats() {
+            try {
+                const res = await fetch(`${API_URL}/stats`);
+                const data = await res.json();
+                document.getElementById('totalExamples').textContent = data.total_examples || 0;
+                document.getElementById('filesUploaded').textContent = data.files_uploaded || 0;
+                document.getElementById('exceptionsCount').textContent = data.exceptions || 0;
+                document.getElementById('messagesProcessed').textContent = data.messages_processed || 0;
+                document.getElementById('status').textContent = (data.status || 'ERROR').toUpperCase();
+            } catch (error) {
+                console.error('Stats error:', error);
+            }
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function scrollToSection(sectionId) {
+            document.getElementById(sectionId).scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
