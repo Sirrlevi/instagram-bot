@@ -1,4 +1,4 @@
-# app.py - Advanced Instagram Auto-Reply Bot
+# app.py - Advanced Instagram Auto-Reply Bot (FIXED INDENTATION)
 from flask import Flask, request, jsonify, render_template
 from werkzeug.utils import secure_filename
 import json
@@ -14,7 +14,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 app.config['UPLOAD_EXTENSIONS'] = ['.json', '.jsonl']
 
 # MongoDB Connection
-MONGO_URI = os.environ.get('MONGO_URI', 'your_mongodb_connection_sting')
+MONGO_URI = os.environ.get('MONGO_URI', 'your_mongodb_connection_string')
 client = MongoClient(MONGO_URI)
 db = client['instagram_bot']
 training_collection = db['training_data']
@@ -30,7 +30,7 @@ class AdvancedReplyBot:
         self.load_exception_list()
         
         self.slang_groups = {
-            'greetings': ['hey', 'hi', 'hello','sup', 'wassup', 'yo', 'namaste'],
+            'greetings': ['hey', 'hi', 'hello', 'sup', 'wassup', 'yo', 'namaste'],
             'compliments': ['cutie', 'hot', 'sexy', 'gorgeous', 'beautiful', 'babe'],
             'questions': ['wyd', 'what', 'where', 'when', 'why', 'how', 'kya'],
             'abuse': ['fuck', 'shit', 'bitch', 'ass', 'bc', 'mc', 'chutiya', 'madarchod'],
@@ -41,7 +41,7 @@ class AdvancedReplyBot:
         self.training_data = []
         try:
             data = training_collection.find()
-           for item in data:
+            for item in data:
                 self.training_data.append({
                     'instruction': item.get('instruction', ''),
                     'response': item.get('response', '')
@@ -54,7 +54,7 @@ class AdvancedReplyBot:
         self.exception_list = []
         try:
             exceptions = exception_collection.find()
-            for item in excptions:
+            for item in exceptions:
                 username = item.get('username', '').lower().strip()
                 if username:
                     self.exception_list.append(username)
@@ -66,7 +66,7 @@ class AdvancedReplyBot:
         if not username:
             return False
         username_clean = username.lower().strip().replace('@', '')
-        return username_clean in self.exception_ist
+        return username_clean in self.exception_list
     
     def is_message_processed(self, message_id):
         try:
@@ -83,7 +83,7 @@ class AdvancedReplyBot:
             })
         except Exception as e:
             print(f"Error: {e}")
-   
+    
     def clean_text(self, text):
         text = text.lower().strip()
         text = re.sub(r's+', ' ', text)
@@ -96,7 +96,7 @@ class AdvancedReplyBot:
         keywords = [w for w in words if w not in stop_words and len(w) > 2]
         return keywords
     
-    def fuzzy_siilarity(self, a, b):
+    def fuzzy_similarity(self, a, b):
         return SequenceMatcher(None, a.lower(), b.lower()).ratio()
     
     def word_overlap_score(self, msg_keywords, instruction_keywords):
@@ -108,7 +108,7 @@ class AdvancedReplyBot:
         union = msg_set.union(inst_set)
         return len(intersection) / len(union) if len(union) > 0 else 0
     
-    def detect_sang_category(self, text):
+    def detect_slang_category(self, text):
         text_lower = text.lower()
         detected = []
         for category, words in self.slang_groups.items():
@@ -121,7 +121,7 @@ class AdvancedReplyBot:
     def find_best_matches(self, incoming_message, top_n=3):
         incoming_clean = self.clean_text(incoming_message)
         incoming_keywords = self.extract_keywords(incoming_clean)
-        incomng_categories = self.detect_slang_category(incoming_clean)
+        incoming_categories = self.detect_slang_category(incoming_clean)
         
         scores = []
         for item in self.training_data:
@@ -131,7 +131,7 @@ class AdvancedReplyBot:
             
             fuzzy_score = self.fuzzy_similarity(incoming_clean, instruction_clean)
             keyword_score = self.word_overlap_score(incoming_keywords, instruction_keywords)
-           
+            
             substring_boost = 0
             if instruction_clean in incoming_clean or incoming_clean in instruction_clean:
                 substring_boost = 0.3
@@ -143,7 +143,7 @@ class AdvancedReplyBot:
             
             combined_score = (
                 fuzzy_score * 0.3 +
-                eyword_score * 0.4 +
+                keyword_score * 0.4 +
                 substring_boost +
                 category_boost
             )
@@ -160,7 +160,7 @@ class AdvancedReplyBot:
     def mix_responses(self, matches):
         if not matches:
             return self.get_default_response()
-       if matches[0]['score'] > 0.6:
+        if matches[0]['score'] > 0.6:
             return matches[0]['response']
         
         response_parts = []
@@ -172,7 +172,7 @@ class AdvancedReplyBot:
         
         if response_parts:
             selected = random.sample(response_parts, min(2, len(response_parts)))
-            emojis = ['💀', '🥀', '☠️' '😭', '🤣', '💔', '🙏🏻']
+            emojis = ['💀', '🥀', '☠️', '😭', '🤣', '💔', '🙏🏻']
             emoji = random.choice(emojis)
             return f"{' '.join(selected)} {emoji}"
         return self.get_default_response()
@@ -187,7 +187,7 @@ class AdvancedReplyBot:
             "die ngga nobody cares ☠️"
         ]
         return random.choice(defaults)
-   
+    
     def get_response(self, incoming_message, username=None, is_group=False):
         if not incoming_message or len(incoming_message.strip()) == 0:
             response = "stfu empty msg ngga 💀"
@@ -198,7 +198,8 @@ class AdvancedReplyBot:
             else:
                 response = self.get_default_response()
         
-        if is_group and username:            username_clean = username.strip().replace('@', '')
+        if is_group and username:
+            username_clean = username.strip().replace('@', '')
             response = f"@{username_clean} {response}"
         
         return response
@@ -213,7 +214,7 @@ class AdvancedReplyBot:
             self.load_training_data()
             return True
         except Exception as e:
-           print(f"Error: {e}")
+            print(f"Error: {e}")
             return False
     
     def process_uploaded_file(self, file_content):
@@ -229,7 +230,7 @@ class AdvancedReplyBot:
                 try:
                     data = json.loads(line)
                     instruction = data.get('instruction', '').strip()
-                    reponse = data.get('response', '').strip()
+                    response = data.get('response', '').strip()
                     if instruction and response:
                         existing = training_collection.find_one({'instruction': instruction})
                         if not existing:
@@ -238,7 +239,7 @@ class AdvancedReplyBot:
                                 'response': response,
                                 'added_at': datetime.now()
                             })
-                           added_count += 1
+                            added_count += 1
                 except json.JSONDecodeError:
                     error_count += 1
                     continue
@@ -253,7 +254,7 @@ class AdvancedReplyBot:
             return {'success': False, 'error': str(e)}
     
     def add_exception(self, username):
-        tr:
+        try:
             username_clean = username.lower().strip().replace('@', '')
             existing = exception_collection.find_one({'username': username_clean})
             if not existing:
@@ -264,7 +265,7 @@ class AdvancedReplyBot:
                 self.load_exception_list()
                 return True, "User added to exception list"
             else:
-                return False, "User aleady in exception list"
+                return False, "User already in exception list"
         except Exception as e:
             return False, str(e)
     
@@ -276,7 +277,7 @@ class AdvancedReplyBot:
                 self.load_exception_list()
                 return True, "User removed from exception list"
             else:
-                return False, "User not fund in exception list"
+                return False, "User not found in exception list"
         except Exception as e:
             return False, str(e)
     
@@ -296,7 +297,7 @@ def dashboard():
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
-        return jonify({'success': False, 'error': 'No file uploaded'}), 400
+        return jsonify({'success': False, 'error': 'No file uploaded'}), 400
     file = request.files['file']
     if file.filename == '':
         return jsonify({'success': False, 'error': 'No file selected'}), 400
@@ -306,7 +307,7 @@ def upload_file():
         return jsonify({'success': False, 'error': 'Invalid file type'}), 400
     try:
         file_content = file.read()
-        files_collection.insert_on({
+        files_collection.insert_one({
             'filename': filename,
             'uploaded_at': datetime.now(),
             'size': len(file_content)
@@ -319,7 +320,7 @@ def upload_file():
                 'stats': {
                     'added': result['added'],
                     'errors': result['errors'],
-                    total': result['total']
+                    'total': result['total']
                 }
             })
         else:
@@ -333,7 +334,7 @@ def add_data():
     instruction = data.get('instruction', '').strip()
     response = data.get('response', '').strip()
     if not instruction or not response:
-        return jsonify({'success': Fals, 'error': 'Required fields missing'}), 400
+        return jsonify({'success': False, 'error': 'Required fields missing'}), 400
     if bot.add_single_data(instruction, response):
         return jsonify({'success': True, 'message': 'Data added', 'total': len(bot.training_data)})
     else:
@@ -346,7 +347,7 @@ def test():
     username = data.get('username', '')
     is_group = data.get('is_group', False)
     if not message:
-        retur jsonify({'error': 'Message required'}), 400
+        return jsonify({'error': 'Message required'}), 400
     if username and bot.is_user_excepted(username):
         return jsonify({
             'message': message,
@@ -362,7 +363,7 @@ def test():
         'excepted': False
     })
 
-@app.route('/excepion/add', methods=['POST'])
+@app.route('/exception/add', methods=['POST'])
 def add_exception():
     data = request.json
     username = data.get('username', '').strip()
@@ -374,7 +375,7 @@ def add_exception():
     else:
         return jsonify({'success': False, 'error': message}), 400
 
-@app.route('/exception/remove', methods=['POST']
+@app.route('/exception/remove', methods=['POST'])
 def remove_exception():
     data = request.json
     username = data.get('username', '').strip()
@@ -388,7 +389,7 @@ def remove_exception():
 
 @app.route('/exception/list', methods=['GET'])
 def list_exceptions():
-   exceptions = bot.get_all_exceptions()
+    exceptions = bot.get_all_exceptions()
     return jsonify({'success': True, 'exceptions': exceptions, 'total': len(exceptions)})
 
 @app.route('/stats', methods=['GET'])
@@ -399,7 +400,7 @@ def stats():
     processed_count = processed_messages.count_documents({})
     return jsonify({
         'total_examples': training_count,
-        'files_uploaded: file_count,
+        'files_uploaded': file_count,
         'exceptions': exception_count,
         'messages_processed': processed_count,
         'status': 'active'
@@ -418,7 +419,7 @@ def reload_data():
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
-    data = requet.json
+    data = request.json
     if 'message' in data:
         message_id = data['message'].get('id', '')
         incoming_msg = data['message']['text']
@@ -428,7 +429,7 @@ def webhook():
         if bot.is_message_processed(message_id):
             return jsonify({'status': 'already_processed'})
         if bot.is_user_excepted(sender_username):
-            return jsonify({'status': 'uer_excepted'})
+            return jsonify({'status': 'user_excepted'})
         response = bot.get_response(incoming_msg, sender_username, is_group)
         bot.mark_message_processed(message_id)
         return jsonify({
