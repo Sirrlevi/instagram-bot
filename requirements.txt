@@ -1,4 +1,4 @@
-instagrapi==2.1.2
+instagrapi
 openai
 python-dotenv
 flask
