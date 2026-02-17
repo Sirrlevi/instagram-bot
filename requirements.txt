@@ -3,5 +3,5 @@ pydantic==1.8.2
 groq==0.11.0
 python-dotenv==1.0.0
 flask==3.0.0
-Pillow==10.1.0
+Pillow==9.5.0  # <-- 9.5.0 use karo, 10.1.0 nahi (Python 3.11 ke saath stable)
 openai==1.3.0
