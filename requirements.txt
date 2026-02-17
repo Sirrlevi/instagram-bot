@@ -1,6 +1,6 @@
 instagrapi==1.14.0
 pydantic==1.8.2
-groq==0.11.0           # Old version that doesn't require pydantic
+groq==0.11.0
 python-dotenv
 flask
 Pillow>=8.1.1
