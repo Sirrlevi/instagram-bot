@@ -2,11 +2,10 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# System dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
+# Pehle instagrapi install karo (uski specific pydantic ke saath)
+RUN pip install --no-cache-deps instagrapi==1.14.0
 
+# Phir baaki dependencies install karo (groq apni pydantic lega, conflict hoga but Docker handle karega)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
