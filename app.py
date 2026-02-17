@@ -4,7 +4,7 @@ import random
 import threading
 from flask import Flask
 from instagrapi import Client
-import groq
+import groq  # 'from groq import Groq' nahi, direct import
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,25 +12,29 @@ load_dotenv()
 # ---------- Configuration ----------
 INSTA_USER = os.getenv("INSTA_USER")
 INSTA_PASS = os.getenv("INSTA_PASS")
-OWNER_ID = os.getenv("OWNER_ID")
+OWNER_ID = os.getenv("OWNER_ID")  # Instagram numeric ID
 API_KEY = os.getenv("GROQ_API_KEY")
 
-# Groq client
+# Groq client - sahi tarika
 groq_client = groq.Groq(api_key=API_KEY)
 MODEL = "llama-3.1-8b-instant"
 
 # Instagram client
 cl = Client()
 
-# Flask app for port binding
+# Flask app for port binding (MUST for Render)
 flask_app = Flask(__name__)
 
 @flask_app.route('/')
 def home():
     return "🤖 Psycho Bot is running!"
 
+@flask_app.route('/health')
+def health():
+    return "OK", 200
+
 def generate_savage_reply(user_text, username, is_owner):
-    """Generate brutal roast"""
+    """Brutal roast generator"""
     if is_owner:
         system_p = "You are a loyal psycho clone of Veto. Respond with extreme devotion."
         user_p = f"Veto Baapji ne kaha: {user_text}"
@@ -144,15 +148,22 @@ def run_bot():
 
 # ---------- Entry Point ----------
 if __name__ == "__main__":
+    # PORT binding - Render ke liye MUST
     port = int(os.environ.get("PORT", 10000))
-    flask_thread = threading.Thread(target=lambda: flask_app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False))
+    
+    # Flask thread mein chalao
+    flask_thread = threading.Thread(
+        target=lambda: flask_app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
+    )
     flask_thread.daemon = True
     flask_thread.start()
-    print(f"🌐 Flask server on port {port}")
+    print(f"🌐 Flask server started on port {port}")
+    print(f"🔗 Health check: http://localhost:{port}/health")
 
+    # Bot chalao
     try:
         run_bot()
     except KeyboardInterrupt:
-        print("\n👋 Bot stopped")
+        print("\n👋 Bot stopped by user")
     except Exception as e:
         print(f"💥 Fatal error: {e}")
