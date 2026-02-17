@@ -1,5 +1,5 @@
 instagrapi==1.14.0
 pydantic==1.10.13
-openai
+groq
 python-dotenv
 flask
