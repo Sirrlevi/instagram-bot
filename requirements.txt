@@ -1,6 +1,7 @@
 instagrapi==1.14.0
 pydantic==1.8.2
 groq==0.11.0
-python-dotenv
-flask
-Pillow>=8.1.1
+python-dotenv==1.0.0
+flask==3.0.0
+Pillow==10.1.0
+openai==1.3.0
