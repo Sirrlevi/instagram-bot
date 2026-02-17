@@ -2,9 +2,9 @@ import os
 import time
 import random
 import threading
+import requests  # Direct API calls, no SDK
 from flask import Flask
 from instagrapi import Client
-import groq
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,17 +12,16 @@ load_dotenv()
 # ---------- Configuration ----------
 INSTA_USER = os.getenv("INSTA_USER")
 INSTA_PASS = os.getenv("INSTA_PASS")
-OWNER_ID = os.getenv("OWNER_ID")  # Instagram numeric ID
+OWNER_ID = os.getenv("OWNER_ID")  # Instagram numeric ID of Veto
 API_KEY = os.getenv("GROQ_API_KEY")
 
-# Groq client
-groq_client = groq.Groq(api_key=API_KEY)
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 MODEL = "llama-3.1-8b-instant"
 
 # Instagram client
 cl = Client()
 
-# Flask app for port binding (MUST for Render)
+# Flask app for port binding (Render requirement)
 flask_app = Flask(__name__)
 
 @flask_app.route('/')
@@ -34,35 +33,48 @@ def health():
     return "OK", 200
 
 def generate_savage_reply(user_text, username, is_owner):
-    """Brutal roast generator"""
+    """Generate brutal roast using direct Groq API call - no SDK dependencies"""
     if is_owner:
-        system_p = "You are a loyal psycho clone of Veto. Respond with extreme devotion."
-        user_p = f"Veto Baapji ne kaha: {user_text}"
+        system_p = "You are a loyal psycho clone of Veto. Respond with extreme devotion and brutality when talking to your owner."
+        user_p = f"Veto Baapji ne kaha: {user_text}. Iska reply de ek loyal kutte ki tarah, lekin savage bhi."
     else:
-        system_p = "You are a brutal psycho clone. Roast everyone except Veto. Use Hinglish, be gory and savage."
-        user_p = f"@{username} ne kaha: {user_text}. Iski gaand faad de."
+        system_p = "You are a brutal psycho clone. Roast everyone except Veto. Use Hinglish, be gory and savage. No hesitation."
+        user_p = f"@{username} ne kaha: {user_text}. Iski gaand faad de, gore gaali de, maa-behen ek kar de."
 
     try:
-        response = groq_client.chat.completions.create(
-            model=MODEL,
-            messages=[
+        headers = {
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "model": MODEL,
+            "messages": [
                 {"role": "system", "content": system_p},
                 {"role": "user", "content": user_p}
             ],
-            temperature=1.3,
-            max_tokens=500
-        )
-        return response.choices[0].message.content.strip()
+            "temperature": 1.3,
+            "max_tokens": 500
+        }
+        
+        response = requests.post(GROQ_API_URL, json=payload, headers=headers, timeout=30)
+        response.raise_for_status()
+        
+        data = response.json()
+        return data["choices"][0]["message"]["content"].strip()
+        
     except Exception as e:
-        return f"@{username} Error: {str(e)[:50]}"
+        return f"@{username} Teri MKC, API error: {str(e)[:50]}"
 
 def save_session():
+    """Save Instagram session to file"""
     try:
         cl.dump_settings("session.json")
     except:
         pass
 
 def load_session():
+    """Load saved session if valid"""
     try:
         cl.load_settings("session.json")
         cl.get_timeline_feed()
@@ -71,12 +83,14 @@ def load_session():
         return False
 
 def login_with_retry(max_retries=3):
+    """Login with retry logic and session reuse"""
     for attempt in range(max_retries):
         try:
             if load_session():
-                print("✅ Session loaded!")
+                print("✅ Session loaded successfully!")
                 return True
-            print(f"🔄 Login attempt {attempt + 1}...")
+
+            print(f"🔄 Login attempt {attempt + 1}/{max_retries}...")
             cl.login(INSTA_USER, INSTA_PASS)
             save_session()
             print("✅ Login successful!")
@@ -84,18 +98,24 @@ def login_with_retry(max_retries=3):
         except Exception as e:
             print(f"❌ Login failed: {e}")
             if attempt < max_retries - 1:
-                time.sleep(30 * (attempt + 1))
-    return False
+                wait = 30 * (attempt + 1)
+                print(f"⏳ Waiting {wait} seconds...")
+                time.sleep(wait)
+            else:
+                print("❌ All login attempts failed")
+                return False
 
 def run_bot():
+    """Main bot loop – processes Instagram messages"""
     print("🚀 Starting Instagram Psycho Bot...")
+
     if not login_with_retry():
-        print("❌ Cannot login. Exiting.")
+        print("❌ Cannot login. Bot will not run.")
         return
 
     processed_msgs = set()
     last_check = time.time()
-    print("🤖 Bot is live!")
+    print("🤖 Bot is live! Listening for messages...")
 
     while True:
         try:
@@ -112,7 +132,7 @@ def run_bot():
                     if not msgs:
                         continue
 
-                    m = msgs[0]
+                    m = msgs[0]  # most recent message
                     if m.id in processed_msgs or m.user_id == cl.user_id:
                         continue
 
@@ -121,46 +141,54 @@ def run_bot():
                     username = cl.user_info(sender_id).username
                     is_owner = sender_id == OWNER_ID
 
+                    # In groups, only reply if mentioned (unless owner)
                     if is_group and not is_owner:
                         bot_username = INSTA_USER.replace("_", "")
                         if f"@{bot_username}" not in m.text and "bot" not in m.text.lower():
                             continue
 
                     processed_msgs.add(m.id)
-                    user_text = m.text or "..."
-                    print(f"🎯 Target: @{username}")
-                    
+                    user_text = m.text or "Kuch to bole madarchod"
+
+                    print(f"🎯 Target: @{username} | {'👑 OWNER' if is_owner else '👤 USER'} | Text: {user_text[:30]}...")
+
                     reply = generate_savage_reply(user_text, username, is_owner)
                     cl.direct_send(reply, thread_ids=[thread.id])
-                    print(f"💀 Roast sent")
-                    
+                    print(f"💀 Roast sent to @{username}")
+
                     time.sleep(random.randint(5, 10))
 
                 except Exception as e:
                     print(f"⚠️ Thread error: {e}")
+                    continue
 
+            # Clean up old message IDs
             if len(processed_msgs) > 1000:
                 processed_msgs = set(list(processed_msgs)[-500:])
 
         except Exception as e:
             print(f"❌ Main loop error: {e}")
             time.sleep(60)
+            # Re-login if session expired
+            try:
+                cl.get_timeline_feed()
+            except:
+                print("🔄 Session expired, re-logging...")
+                login_with_retry()
 
 # ---------- Entry Point ----------
 if __name__ == "__main__":
-    # PORT binding - Render ke liye MUST
+    # Run Flask in a separate thread to bind the port (required by Render)
     port = int(os.environ.get("PORT", 10000))
-    
-    # Flask thread mein chalao
     flask_thread = threading.Thread(
         target=lambda: flask_app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
     )
     flask_thread.daemon = True
     flask_thread.start()
     print(f"🌐 Flask server started on port {port}")
-    print(f"🔗 Health check: http://localhost:{port}/health")
+    print(f"🔗 Health check: http://0.0.0.0:{port}/health")
 
-    # Bot chalao
+    # Run the bot
     try:
         run_bot()
     except KeyboardInterrupt:
