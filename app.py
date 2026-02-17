@@ -4,7 +4,7 @@ import random
 import threading
 from flask import Flask
 from instagrapi import Client
-import groq  # 'from groq import Groq' nahi, direct import
+import groq
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -15,7 +15,7 @@ INSTA_PASS = os.getenv("INSTA_PASS")
 OWNER_ID = os.getenv("OWNER_ID")  # Instagram numeric ID
 API_KEY = os.getenv("GROQ_API_KEY")
 
-# Groq client - sahi tarika
+# Groq client
 groq_client = groq.Groq(api_key=API_KEY)
 MODEL = "llama-3.1-8b-instant"
 
