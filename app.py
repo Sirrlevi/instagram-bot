@@ -4,7 +4,7 @@ import random
 import threading
 from flask import Flask
 from instagrapi import Client
-from groq import Groq
+import groq  # Changed from 'from groq import Groq'
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -15,8 +15,8 @@ INSTA_PASS = os.getenv("INSTA_PASS")
 OWNER_ID = os.getenv("OWNER_ID")          # Instagram user ID (numeric) of Veto
 API_KEY = os.getenv("GROQ_API_KEY")
 
-# Groq client
-groq_client = Groq(api_key=API_KEY)
+# Groq client - updated initialization
+groq_client = groq.Groq(api_key=API_KEY)
 MODEL = "llama-3.1-8b-instant"
 
 # Instagram client
