@@ -1,134 +1,86 @@
 import os
-import time
 import random
-import threading
-import requests
-from flask import Flask
-from instagrapi import Client
+import time
+from datetime import datetime
 from dotenv import load_dotenv
+from instagrapi import Client
+from openai import OpenAI
 
 load_dotenv()
 
-# ---------- Configuration ----------
-INSTA_USER = os.getenv("INSTA_USER")
-OWNER_ID = os.getenv("OWNER_ID")
-API_KEY = os.getenv("GROQ_API_KEY")
+IG_USERNAME = os.getenv('IG_USERNAME')
+IG_PASSWORD = os.getenv('IG_PASSWORD')
+OWNER_ID = int(os.getenv('OWNER_IG_USER_ID'))
+OWNER_USERNAME = os.getenv('OWNER_IG_USERNAME')
+API_KEY = os.getenv('API_KEY')
+BASE_URL = os.getenv('BASE_URL', 'https://api.x.ai/v1')
+MODEL = os.getenv('MODEL', 'grok-beta')
 
-GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-MODEL = "llama-3.1-8b-instant"
+print("✅ Instagram Brutal Bot Starting...")
 
 cl = Client()
+cl.login(IG_USERNAME, IG_PASSWORD)
+client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
 
-# Flask app for port binding
-flask_app = Flask(__name__)
+# souls.md
+with open('souls.md', 'r', encoding='utf-8') as f:
+    SOUL_PROMPT = f.read().strip()
 
-@flask_app.route('/')
-def home():
-    return "🤖 Psycho Bot is running!"
-
-@flask_app.route('/health')
-def health():
-    return "OK", 200
-
-def load_session():
-    """Session ID se session load karo"""
-    session_id = os.getenv("IG_SESSION_ID")
-    if not session_id:
-        print("❌ IG_SESSION_ID environment variable missing!")
-        return False
-    
+def generate_roast(text, sender_username):
     try:
-        cl.login_by_sessionid(session_id)
-        cl.dump_settings("session.json")
-        print("✅ Session loaded from session ID!")
-        return True
-    except Exception as e:
-        print(f"❌ Session load failed: {e}")
-        return False
-
-def generate_reply(user_text, username, is_owner):
-    if is_owner:
-        system_p = "You are a loyal psycho clone of Veto."
-        user_p = f"Veto: {user_text}"
-    else:
-        system_p = "You are a brutal psycho clone. Roast in Hinglish."
-        user_p = f"@{username} said: {user_text}"
-
-    try:
-        response = requests.post(
-            GROQ_API_URL,
-            json={
-                "model": MODEL,
-                "messages": [
-                    {"role": "system", "content": system_p},
-                    {"role": "user", "content": user_p}
-                ],
-                "temperature": 1.3
-            },
-            headers={
-                "Authorization": f"Bearer {API_KEY}",
-                "Content-Type": "application/json"
-            },
-            timeout=20
+        resp = client.chat.completions.create(
+            model=MODEL,
+            messages=[
+                {"role": "system", "content": SOUL_PROMPT},
+                {"role": "user", "content": f"Gory brutal roast this madarchod hard: {text} (sender: {sender_username})"}
+            ],
+            max_tokens=300,
+            temperature=1.35
         )
-        return response.json()["choices"][0]["message"]["content"]
+        return resp.choices[0].message.content.strip()
     except Exception as e:
-        return f"@{username} Error: {str(e)[:30]}"
+        print(f"API error: {e}")
+        return "API so gaya bc 🩸"
 
-def run_bot():
-    print("🚀 Bot starting...")
-    
-    if not load_session():
-        print("❌ Cannot load session. Exiting.")
-        return
+# Last checked time (to avoid old messages)
+last_check = datetime.now()
 
-    processed = set()
-    print("🤖 Bot is live!")
-
-    while True:
-        try:
-            threads = cl.direct_threads(amount=5)
-            for thread in threads:
-                try:
-                    msgs = cl.direct_messages(thread.id, amount=3)
-                    if not msgs:
-                        continue
-                    
-                    m = msgs[0]
-                    if m.id in processed or m.user_id == cl.user_id:
-                        continue
-                    
-                    username = cl.user_info(str(m.user_id)).username
-                    processed.add(m.id)
-                    
-                    print(f"📩 @{username}")
-                    reply = generate_reply(m.text or "", username, str(m.user_id) == OWNER_ID)
-                    cl.direct_send(reply, thread_ids=[thread.id])
-                    print(f"✅ Reply sent")
-                    
-                    time.sleep(random.randint(3, 6))
-                    
-                except Exception as e:
-                    print(f"⚠️ {e}")
-                    
-            time.sleep(10)
-            
-        except Exception as e:
-            print(f"❌ {e}")
-            time.sleep(30)
-
-if __name__ == "__main__":
-    # Flask thread mein chalao
-    port = int(os.environ.get("PORT", 10000))
-    flask_thread = threading.Thread(
-        target=lambda: flask_app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
-    )
-    flask_thread.daemon = True
-    flask_thread.start()
-    print(f"🌐 Flask server on port {port}")
-
-    # Bot chalao
+while True:
     try:
-        run_bot()
-    except KeyboardInterrupt:
-        print("\n👋 Bot stopped")
+        # Get all direct threads (DMs + Group DMs)
+        threads = cl.direct_threads(amount=20)
+        
+        for thread in threads:
+            for msg in thread.messages:
+                if msg.timestamp < last_check:
+                    continue  # purane messages ignore
+                
+                sender_id = msg.user_id
+                sender_username = msg.user.username if msg.user else "unknown"
+                text = msg.text or "media bheja hai bc"
+                
+                # Owner check (user_id ya username dono se)
+                is_owner = (sender_id == OWNER_ID) or (sender_username.lower() == OWNER_USERNAME.lower())
+                
+                if is_owner:
+                    # Owner ko obey + respect
+                    if text.lower().startswith(('/', 'order', 'bol')):
+                        reply = "Haan baapji, order do 🔥 Kya gaand faadna hai aaj?"
+                    else:
+                        reply = "Haan boss, sun raha hu. Bol kya scene hai? 🔥"
+                else:
+                    # Baaki sabko full savage roast
+                    reply = generate_roast(text, sender_username)
+                    # Extra brutal touch
+                    reply += random.choice([" Madarchod destroy ho gaya! 🩸", " Gaand faad di teri! 🔥", " Maa chud gayi gory style mein 😂"])
+                
+                # Reply karo
+                cl.direct_send(reply, thread_id=thread.id)
+                print(f"Roasted {sender_username}: {text} → {reply[:50]}...")
+                
+        last_check = datetime.now()
+        time.sleep(8)  # 8 second mein check (rate limit safe)
+
+    except Exception as e:
+        print(f"Error: {e}")
+        time.sleep(30)
