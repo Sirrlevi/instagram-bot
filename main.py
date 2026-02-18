@@ -6,7 +6,7 @@ from datetime import datetime
 from instagrapi import Client
 from openai import OpenAI
 
-# ── Env se load kar (Pydroid mein .env file se ya Railway variables se) ──
+# ── Env se load ──
 IG_SESSION_ID     = os.getenv('IG_SESSION_ID')
 OWNER_IG_USER_ID  = int(os.getenv('OWNER_IG_USER_ID', '0'))
 OWNER_IG_USERNAME = os.getenv('OWNER_IG_USERNAME', '').lower()
@@ -15,8 +15,7 @@ BASE_URL          = os.getenv('BASE_URL', 'https://api.groq.com/openai/v1')
 MODEL             = os.getenv('MODEL', 'llama-3.1-8b-instant')
 
 if not IG_SESSION_ID or OWNER_IG_USER_ID == 0 or not API_KEY:
-    print("Error: IG_SESSION_ID, OWNER_IG_USER_ID ya API_KEY missing!")
-    exit()
+    raise ValueError("IG_SESSION_ID, OWNER_IG_USER_ID ya API_KEY missing! Railway Variables check kar.")
 
 print("Instagram Brutal Clone starting (Session ID mode)...")
 print(f"Owner: {OWNER_IG_USERNAME} (ID: {OWNER_IG_USER_ID})")
@@ -29,21 +28,18 @@ try:
     cl.login_by_sessionid(IG_SESSION_ID)
     print("Instagram session ID se login successful! 🔥")
 except Exception as e:
-    print("Session ID login fail ho gaya:", str(e))
-    print("Fresh session ID nikaal ke try kar (browser se cookie copy kar)")
-    exit()
+    print("Session ID login fail:", str(e))
+    raise
 
-# Groq API client
+# Groq API
 grok = OpenAI(api_key=API_KEY, base_url=BASE_URL)
 
-# souls.md load
+# souls.md
 try:
     with open('souls.md', 'r', encoding='utf-8') as f:
         SOUL_PROMPT = f.read().strip()
-    print("souls.md load ho gaya – brutal mode ON")
 except:
-    print("souls.md file missing! Banaye ya paste kar de folder mein")
-    exit()
+    raise FileNotFoundError("souls.md missing!")
 
 # Database + fallbacks
 conn = sqlite3.connect('brutal_insta.db', check_same_thread=False)
@@ -70,7 +66,7 @@ def get_fallback(sender_name, msg):
     tpl = c.fetchone()[0]
     return tpl.format(user=sender_name, msg=msg[:50]) + " 🩸🔥 Maa chud gayi!"
 
-# Bot loop
+# Main loop
 last_check = datetime.now().timestamp()
 
 print("Bot chal raha hai... DM ka wait kar raha hu 🔥")
@@ -135,7 +131,7 @@ while True:
                 print(f"→ @{sender_name}: {text[:40]}...  →  {reply[:40]}...")
 
         last_check = datetime.now().timestamp()
-        time.sleep(12)  # rate limit safe
+        time.sleep(12)
 
     except Exception as e:
         print("Loop error:", str(e))
