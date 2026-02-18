@@ -3,43 +3,49 @@ import random
 import time
 import sqlite3
 from datetime import datetime
-from dotenv import load_dotenv
 from instagrapi import Client
 from openai import OpenAI
 
-load_dotenv()
+# ── Env se load kar (Pydroid mein .env file se ya Railway variables se) ──
+IG_SESSION_ID     = os.getenv('IG_SESSION_ID')
+OWNER_IG_USER_ID  = int(os.getenv('OWNER_IG_USER_ID', '0'))
+OWNER_IG_USERNAME = os.getenv('OWNER_IG_USERNAME', '').lower()
+API_KEY           = os.getenv('API_KEY')
+BASE_URL          = os.getenv('BASE_URL', 'https://api.groq.com/openai/v1')
+MODEL             = os.getenv('MODEL', 'llama-3.1-8b-instant')
 
-# ── Env Vars ────────────────────────────────────────────────
-IG_USERNAME     = os.getenv('IG_USERNAME')
-IG_PASSWORD     = os.getenv('IG_PASSWORD')
-OWNER_ID        = int(os.getenv('OWNER_IG_USER_ID', 0))
-OWNER_USERNAME  = os.getenv('OWNER_IG_USERNAME', '').lower()
-API_KEY         = os.getenv('API_KEY')
-BASE_URL        = os.getenv('BASE_URL', 'https://api.x.ai/v1')
-MODEL           = os.getenv('MODEL', 'grok-beta')
+if not IG_SESSION_ID or OWNER_IG_USER_ID == 0 or not API_KEY:
+    print("Error: IG_SESSION_ID, OWNER_IG_USER_ID ya API_KEY missing!")
+    exit()
 
-if not all([IG_USERNAME, IG_PASSWORD, OWNER_ID, API_KEY]):
-    raise ValueError("Env vars missing! IG_USERNAME, IG_PASSWORD, OWNER_IG_USER_ID, API_KEY check kar.")
+print("Instagram Brutal Clone starting (Session ID mode)...")
+print(f"Owner: {OWNER_IG_USERNAME} (ID: {OWNER_IG_USER_ID})")
 
-print("Instagram Brutal Clone starting...")
-print(f"Owner: {OWNER_USERNAME} (ID: {OWNER_ID})")
-
-# ── Login Instagram ────────────────────────────────────────
+# Instagram login – session ID se
 cl = Client()
-cl.delay_range = [1, 3]  # thoda human-like delay
-cl.login(IG_USERNAME, IG_PASSWORD)
+cl.delay_range = [1, 3]
 
-# ── Grok Client ────────────────────────────────────────────
+try:
+    cl.login_by_sessionid(IG_SESSION_ID)
+    print("Instagram session ID se login successful! 🔥")
+except Exception as e:
+    print("Session ID login fail ho gaya:", str(e))
+    print("Fresh session ID nikaal ke try kar (browser se cookie copy kar)")
+    exit()
+
+# Groq API client
 grok = OpenAI(api_key=API_KEY, base_url=BASE_URL)
 
-# ── Souls prompt ───────────────────────────────────────────
+# souls.md load
 try:
     with open('souls.md', 'r', encoding='utf-8') as f:
         SOUL_PROMPT = f.read().strip()
+    print("souls.md load ho gaya – brutal mode ON")
 except:
-    raise FileNotFoundError("souls.md missing!")
+    print("souls.md file missing! Banaye ya paste kar de folder mein")
+    exit()
 
-# ── Database (same as Telegram) ────────────────────────────
+# Database + fallbacks
 conn = sqlite3.connect('brutal_insta.db', check_same_thread=False)
 c = conn.cursor()
 c.executescript('''
@@ -64,12 +70,14 @@ def get_fallback(sender_name, msg):
     tpl = c.fetchone()[0]
     return tpl.format(user=sender_name, msg=msg[:50]) + " 🩸🔥 Maa chud gayi!"
 
-# ── Main Loop ──────────────────────────────────────────────
+# Bot loop
 last_check = datetime.now().timestamp()
+
+print("Bot chal raha hai... DM ka wait kar raha hu 🔥")
 
 while True:
     try:
-        threads = cl.direct_threads(amount=20)  # recent DMs + group chats
+        threads = cl.direct_threads(amount=20)
 
         for thread in threads:
             messages = cl.direct_messages(thread.id, amount=10)
@@ -82,31 +90,27 @@ while True:
                 sender_name = msg.user.username if msg.user else f"user_{sender_id}"
                 text = msg.text or "[media/sticker]"
 
-                # Log kar le spam check ke liye
                 now = datetime.now().isoformat()
                 c.execute("INSERT INTO message_log (sender_id, text, timestamp) VALUES (?,?,?)",
                           (sender_id, text[:200], now))
                 conn.commit()
 
-                # Spam filter (1 hour mein 15+ ignore)
                 c.execute("SELECT COUNT(*) FROM message_log WHERE sender_id=? AND timestamp > datetime('now','-1 hour')",
                           (sender_id,))
                 if c.fetchone()[0] > 15:
                     continue
 
-                # Owner check
-                is_owner = (sender_id == OWNER_ID) or (sender_name.lower() == OWNER_USERNAME)
+                is_owner = (sender_id == OWNER_IG_USER_ID) or (sender_name.lower() == OWNER_IG_USERNAME.lower())
 
                 if is_owner:
-                    reply = "Haan boss, sun raha hu 🔥 Order do, kya gaand faadna hai aaj?"
+                    reply = "Haan boss, sun raha hu 🔥 Order do, kya gaand faadna hai?"
                 else:
-                    # Full savage mode
                     try:
                         resp = grok.chat.completions.create(
                             model=MODEL,
                             messages=[
                                 {"role": "system", "content": SOUL_PROMPT},
-                                {"role": "user", "content": f"Gory brutal roast this madarchod hard, full psycho clone style: {text} (from @{sender_name})"}
+                                {"role": "user", "content": f"Gory brutal roast this madarchod hard: {text} (from @{sender_name})"}
                             ],
                             max_tokens=300,
                             temperature=1.35,
@@ -114,14 +118,12 @@ while True:
                         )
                         reply = resp.choices[0].message.content.strip()
                     except Exception as e:
-                        print(f"API error: {e}")
+                        print(f"Groq API error: {e}")
                         reply = "API so gaya bc madarchod"
 
-                    # Refusal fallback
                     if "cannot" in reply.lower() or "sorry" in reply.lower() or len(reply) < 30:
                         reply = get_fallback(sender_name, text)
 
-                    # Extra brutal touch
                     reply += random.choice([
                         " Madarchod destroy ho gaya! 🩸",
                         " Gaand faad di teri bhenchod! 🔥",
@@ -129,13 +131,12 @@ while True:
                         " Khoon nikal gaya randi ke! ⚔️"
                     ])
 
-                # Reply bhej
                 cl.direct_send(reply, thread_ids=[thread.id])
                 print(f"→ @{sender_name}: {text[:40]}...  →  {reply[:40]}...")
 
         last_check = datetime.now().timestamp()
-        time.sleep(12)  # rate limit safe – 5 sec bhi try kar sakta hai agar fast chahiye
+        time.sleep(12)  # rate limit safe
 
     except Exception as e:
-        print(f"Loop error: {e}")
-        time.sleep(60)  # error pe thoda wait
+        print("Loop error:", str(e))
+        time.sleep(60)
